@@ -1,50 +1,72 @@
-import * as THREE from "three"
+import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
+// Crear la escena
 const scene = new THREE.Scene();
 
+// Configurar la cámara
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, 1, 2);
 scene.add(camera);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+// Configurar el renderizador con fondo transparente
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(0x000000);
+renderer.setClearColor(0x000000, 0); // Color de fondo negro con alfa 0 (transparente)
 renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
+// Configurar los controles de órbita
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 controls.enablePan = false;
 controls.minDistance = 2;
-controls.maxDistance = 10;
+controls.maxDistance =0;
 
-let model;
+// Configurar GLTFLoader
 const loader = new GLTFLoader();
 
-loader.load('./models/cuencaMaya2.glb', (gltf) => {
-    model = gltf.scene;
-    console.log('Model loaded:', model);
-    scene.add(model);
+// Variable global para el modelo
+let model = null;
 
-    model.traverse((child) => {
-        if (child.isMesh) {
-            console.log('Applying standard material to mesh:', child);
-            
-        }
-    });
-});
+// Cargar el modelo GLB
+loader.load(
+    './models/cuencaMuseoCla.glb',
+    (gltf) => {
+        model = gltf.scene;
+        console.log('Model loaded:', model);
+        scene.add(model);
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-directionalLight.position.set(2, 2, 5);
+        model.traverse((child) => {
+            if (child.isMesh) {
+              child.material = new THREE.MeshStandardMaterial({ color: "#cb6843", roughness: 0.6 });
+
+                child.castShadow = false;
+                child.receiveShadow = false;
+            }
+        });
+    },
+    (xhr) => {
+        console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+    },
+    (error) => {
+        console.error('An error happened:', error);
+    }
+);
+
+// Agregar luces
+const directionalLight = new THREE.DirectionalLight(0xffffff, 2); // Ajusta la intensidad según sea necesario
+directionalLight.position.set(5, 5, 5);
+directionalLight.intensity = 4;  // Aumenta la intensidad de la luz
 scene.add(directionalLight);
 
-const ambientLight = new THREE.AmbientLight(0x404040);
+const ambientLight = new THREE.AmbientLight(0xffffff, 2); // Asegúrate de que sea suficiente
 scene.add(ambientLight);
 
-const rotationSpeed = 0.28; // radians per second
+// Configurar la animación
+const rotationSpeed = 0.28; // radianes por segundo
 const clock = new THREE.Clock();
 
 function animate() {
@@ -59,6 +81,7 @@ function animate() {
 
 animate();
 
+// Manejar el cambio de tamaño de la ventana
 window.addEventListener("resize", () => {
     const width = window.innerWidth;
     const height = window.innerHeight;
